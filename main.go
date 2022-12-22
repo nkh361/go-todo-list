@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 
-	// "github.com/nkh361/go-todo-list/User/user"
+	"github.com/nkh361/go-todo-list/User/user"
 
 	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
