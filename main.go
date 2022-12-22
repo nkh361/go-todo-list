@@ -5,22 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/user"
 
-	// "github.com/nkh361/go-todo-list/pkg/users"
+	ticket "github.com/nkh361/go-todo-list/Ticket"
+	user "github.com/nkh361/go-todo-list/User"
 
 	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var db *sql.DB
-
-type Ticket struct {
-	ID       int64
-	username string
-	title    string
-	priority float32
-}
 
 // https://go.dev/doc/tutorial/database-access left off at add data
 
@@ -47,8 +40,8 @@ func main() {
 
 	// add new user
 	createNewUser, err := newUser(user.User{
-		username: "nho21",
-		password: "amazing",
+		Username: "nkh361",
+		Password: "test",
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -56,11 +49,11 @@ func main() {
 	fmt.Printf("new user id: %d", createNewUser)
 
 	// test check password
-	check_password, err := checkPassword("nate", "test")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("success: %v", check_password)
+	// check_password, err := checkPassword("nate", "test")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("success: %v", check_password)
 
 	// query by username
 	tickets, err := ticketByUsername("nkh361")
@@ -77,15 +70,15 @@ func main() {
 	fmt.Printf("tickets found by priority 5: %v\n", ticketPriority)
 
 	// add ticket
-	// ticID, errAdd := addTicket(Ticket{
-	// 	username: "nkh361",
-	// 	title:    "apply for jobs",
-	// 	priority: 30,
-	// })
-	// if errAdd != nil {
-	// 	log.Fatal(errAdd)
-	// }
-	// fmt.Printf("ID of added ticket: %v\n", ticID)
+	ticID, errAdd := addTicket(ticket.Ticket{
+		Username: "nkh361",
+		Title:    "apply for jobs",
+		Priority: 30,
+	})
+	if errAdd != nil {
+		log.Fatal(errAdd)
+	}
+	fmt.Printf("ID of added ticket: %v\n", ticID)
 
 	// query by id
 	ticketID, errID := ticketByID(4)
@@ -95,9 +88,9 @@ func main() {
 	fmt.Printf("tickets found by id: %v\n", ticketID)
 }
 
-func ticketByUsername(username string) ([]Ticket, error) {
+func ticketByUsername(username string) ([]ticket.Ticket, error) {
 	// a tickets slice to hold data from returned rows
-	var tickets []Ticket
+	var tickets []ticket.Ticket
 
 	rows, err := db.Query("SELECT * FROM tickets WHERE username = ?", username)
 	if err != nil {
@@ -106,8 +99,8 @@ func ticketByUsername(username string) ([]Ticket, error) {
 	defer rows.Close()
 	// loop through rows, using scan to assign column data for rows
 	for rows.Next() {
-		var tic Ticket
-		if err := rows.Scan(&tic.ID, &tic.username, &tic.title, &tic.priority); err != nil {
+		var tic ticket.Ticket
+		if err := rows.Scan(&tic.ID, &tic.Username, &tic.Title, &tic.Priority); err != nil {
 			return nil, fmt.Errorf("ticketByUsername %q: %v", username, err)
 		}
 		tickets = append(tickets, tic)
@@ -118,8 +111,8 @@ func ticketByUsername(username string) ([]Ticket, error) {
 	return tickets, nil
 }
 
-func ticketByPriority(priority int) ([]Ticket, error) {
-	var tickets []Ticket
+func ticketByPriority(priority int) ([]ticket.Ticket, error) {
+	var tickets []ticket.Ticket
 
 	rows, err := db.Query("SELECT * FROM tickets WHERE priority = ?", priority)
 	if err != nil {
@@ -127,8 +120,8 @@ func ticketByPriority(priority int) ([]Ticket, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var tic Ticket
-		if err := rows.Scan(&tic.ID, &tic.username, &tic.title, &tic.priority); err != nil {
+		var tic ticket.Ticket
+		if err := rows.Scan(&tic.ID, &tic.Username, &tic.Title, &tic.Priority); err != nil {
 			return nil, fmt.Errorf("ticketByPriority %q: %v", priority, err)
 		}
 		tickets = append(tickets, tic)
@@ -139,11 +132,11 @@ func ticketByPriority(priority int) ([]Ticket, error) {
 	return tickets, nil
 }
 
-func ticketByID(id int64) (Ticket, error) {
-	var tic Ticket
+func ticketByID(id int64) (ticket.Ticket, error) {
+	var tic ticket.Ticket
 
 	row := db.QueryRow("SELECT * FROM tickets WHERE id = ?", id)
-	if err := row.Scan(&tic.ID, &tic.username, &tic.title, &tic.priority); err != nil {
+	if err := row.Scan(&tic.ID, &tic.Username, &tic.Title, &tic.Priority); err != nil {
 		if err == sql.ErrNoRows {
 			return tic, fmt.Errorf("ticketByID %d: no such ticket", id)
 		}
@@ -152,8 +145,8 @@ func ticketByID(id int64) (Ticket, error) {
 	return tic, nil
 }
 
-func addTicket(tic Ticket) (int64, error) {
-	result, err := db.Exec("INSERT INTO tickets (username, title, priority) VALUES (?,?,?)", tic.username, tic.title, tic.priority)
+func addTicket(tic ticket.Ticket) (int64, error) {
+	result, err := db.Exec("INSERT INTO tickets (username, title, priority) VALUES (?,?,?)", tic.Username, tic.Title, tic.Priority)
 	if err != nil {
 		return 0, fmt.Errorf("addTicket: %v", err)
 	}
@@ -165,8 +158,8 @@ func addTicket(tic Ticket) (int64, error) {
 }
 
 func newUser(usr user.User) (int64, error) {
-	hashedPassword := user.getHashedPassword(usr.password)
-	result, err := db.Exec("INSERT INTO users (username, password) VALUES (?, ?)", usr.username, hashedPassword)
+	hashedPassword := user.GetHashedPassword(usr.Password)
+	result, err := db.Exec("INSERT INTO users (username, password) VALUES (?, ?)", usr.Username, hashedPassword)
 	if err != nil {
 		return 0, fmt.Errorf("newUser: %v", err)
 	}

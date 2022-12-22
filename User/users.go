@@ -8,11 +8,11 @@ import (
 )
 
 type User struct {
-	username string
-	password string
+	Username string
+	Password string
 }
 
-func getHashedPassword(i string) string {
+func GetHashedPassword(i string) string {
 	password := []byte(i)
 	hashedPassword, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 	if err != nil {
